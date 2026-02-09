@@ -18,7 +18,7 @@ is violated. They're called before the tool runs, preventing the
 forbidden operation entirely.
 
 Available guards:
-  pr-workflow   - Block PR creation and feature branches
+  pr-workflow   - Block GitHub PR creation (use MQ instead)
 
 Example hook configuration:
   {
@@ -31,16 +31,17 @@ Example hook configuration:
 
 var tapGuardPRWorkflowCmd = &cobra.Command{
 	Use:   "pr-workflow",
-	Short: "Block PR creation and feature branches",
-	Long: `Block PR workflow operations in Gas Town.
+	Short: "Block GitHub PR creation (use MQ instead)",
+	Long: `Block GitHub PR creation in Gas Town.
 
-Gas Town workers push directly to main. PRs add friction that breaks
-the autonomous execution model (GUPP principle).
+Gas Town workers use feature branches and the merge queue (MQ).
+GitHub PRs are not used — Refinery merges from MQ, not from PRs.
 
 This guard blocks:
   - gh pr create
-  - git checkout -b (feature branches)
-  - git switch -c (feature branches)
+
+Branch creation (git checkout -b, git switch -c) is allowed because
+workers need feature branches for their standard workflow.
 
 Exit codes:
   0 - Operation allowed (not in Gas Town agent context)
@@ -63,17 +64,17 @@ func runTapGuardPRWorkflow(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// We're in a Gas Town context - block PR operations
+	// We're in a Gas Town context - block PR creation
 	fmt.Fprintln(os.Stderr, "")
 	fmt.Fprintln(os.Stderr, "╔══════════════════════════════════════════════════════════════════╗")
-	fmt.Fprintln(os.Stderr, "║  ❌ PR WORKFLOW BLOCKED                                          ║")
+	fmt.Fprintln(os.Stderr, "║  ❌ PR CREATION BLOCKED                                          ║")
 	fmt.Fprintln(os.Stderr, "╠══════════════════════════════════════════════════════════════════╣")
-	fmt.Fprintln(os.Stderr, "║  Gas Town workers push directly to main. PRs are forbidden.     ║")
+	fmt.Fprintln(os.Stderr, "║  Gas Town uses the merge queue (MQ), not GitHub PRs.            ║")
 	fmt.Fprintln(os.Stderr, "║                                                                  ║")
-	fmt.Fprintln(os.Stderr, "║  Instead of:  gh pr create / git checkout -b / git switch -c    ║")
-	fmt.Fprintln(os.Stderr, "║  Do this:     git add . && git commit && git push origin main   ║")
+	fmt.Fprintln(os.Stderr, "║  Instead of:  gh pr create                                      ║")
+	fmt.Fprintln(os.Stderr, "║  Do this:     gt done  (submits to MQ, Refinery merges)         ║")
 	fmt.Fprintln(os.Stderr, "║                                                                  ║")
-	fmt.Fprintln(os.Stderr, "║  Why? PRs add friction that breaks autonomous execution.        ║")
+	fmt.Fprintln(os.Stderr, "║  Feature branches are fine — use git checkout -b as needed.     ║")
 	fmt.Fprintln(os.Stderr, "║  See: ~/gt/docs/PRIMING.md (GUPP principle)                     ║")
 	fmt.Fprintln(os.Stderr, "╚══════════════════════════════════════════════════════════════════╝")
 	fmt.Fprintln(os.Stderr, "")
